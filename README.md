@@ -13,6 +13,8 @@ n'est pas zoné, marquer ``null``.
 
 ## Utilisation
 
+Le fichier `example.env` doit être rempli pour contenir les informations de connection à l'API.
+
 `python3 retrieve_graphemes.py fichier.conf`
 
 Il est nécessaire de lancer une première fois le script avec l'option 
