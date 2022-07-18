@@ -2,11 +2,11 @@ Ce script permet de récupérer l'image de chaque graphème d'un manuscrit trans
 
 Il utilise l'API d'eScriptorium pour récupérer les informations, les images, et extraires les graphèmes à des fins d'étude et/ou de comparaison.
 
-La proportion de graphèmes conservés permet de prélever des échantillons.
+La proportion de graphèmes conservés permet de prélever des échantillons (option `proportion_to_keep` dans la fichier de paramètres).
 
 Il est nécessaire de disposer de modèles de transcription corrects pour récupérer des images exploitables et fiables. 
 Les graphèmes sont classées en reprenant les classes reconnues par le modèle: le script reproduira donc
-les biais du modèle éventuels.
+les biais éventuels du modèle et du jeu de données d'entraînement. Ce script peut servir à identifier ces biais.
 
 Un ajustement de la hauteur et de la largeur des images extraites est probablement nécessaire (à venir: 
 distinction des lettres en configuration par
