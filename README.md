@@ -16,7 +16,8 @@ n'est pas zoné, marquer ``null``.
 `python3 retrieve_graphemes.py fichier.conf`
 
 Il est nécessaire de lancer une première fois le script avec l'option 
-`--identifiers` afin de récupérer les identifiants de transcription et de zone.
+`--identifiers` afin de récupérer les identifiants de transcription et de zone, et de
+fournir une classification des graphèmes: voir paragraphe suivant.
 
 
 La *bounding box* proposée par kraken n'étant pas parfaitement ajustée, un ajustement de la hauteur et de la largeur 
