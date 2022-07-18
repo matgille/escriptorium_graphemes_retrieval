@@ -1,0 +1,20 @@
+{
+  "centre": {
+	"x_left_correction": -18,
+	"x_right_correction": 25,
+	"y_top_correction": 10,
+	"y_bottom_correction": -10
+  },
+  "descendant": {
+	"x_left_correction": -18,
+	"x_right_correction": 25,
+	"y_top_correction": 10,
+	"y_bottom_correction": 10
+  },
+  "ascendant": {
+	"x_left_correction": -18,
+	"x_right_correction": 25,
+	"y_top_correction": -10,
+	"y_bottom_correction": 0
+  }
+}
