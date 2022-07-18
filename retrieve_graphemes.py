@@ -299,20 +299,9 @@ def extract_images(page,
         cropped_img = newIm.crop(rectangle_coordinates)
     except:
         return
+
     try:
-        os.mkdir(f"img")
-    except:
-        pass
-    try:
-        os.mkdir(f"img/{document_name}")
-    except:
-        pass
-    try:
-        os.mkdir(f"img/{document_name}/graphemes")
-    except:
-        pass
-    try:
-        os.mkdir(f"img/{document_name}/graphemes/{char}")
+        os.makedirs(f"img/{document_name}/graphemes/{char}")
     except:
         pass
     try:
