@@ -189,6 +189,10 @@ def extract_images(page, coordonnees, char, index, image_as_array, document_name
     x_right_correction = + 25
     y_top_correction = + 10
     y_bottom_correction = - 10
+
+
+
+
     # https://stackoverflow.com/a/43591567
     # On selectionne le rectangle qui contient la ligne (= les valeurs d'abcisse et d'ordonnée
     # maximales et minimales)
@@ -218,6 +222,14 @@ def extract_images(page, coordonnees, char, index, image_as_array, document_name
         cropped_img = newIm.crop(rectangle_coordinates)
     except:
         return
+    try:
+        os.mkdir(f"img")
+    except:
+        pass
+    try:
+        os.mkdir(f"img/{document_name}")
+    except:
+        pass
     try:
         os.mkdir(f"img/{document_name}/graphemes")
     except:
