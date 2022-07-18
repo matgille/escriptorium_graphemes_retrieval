@@ -25,22 +25,22 @@ class Document:
     Hack to re-compute polygons for first and last line of each given zone.
     """
 
-    def __init__(self, document_pk, 
-                 page_pk_boundaries: tuple, 
-                 transcription_pk=None, 
+    def __init__(self, document_pk,
+                 page_pk_boundaries: tuple,
+                 transcription_pk=None,
                  main_zone_pk=None,
                  main_zone_label=None,
                  prefix=None,
                  document_name=None,
-                 proportion=1):
+                 proportion=1,
+                 graphemes_classification=None,
+                 pixel_adjustments=None):
         self.document_pk = document_pk
-        self.region_types = None
         self.pages_list = range(page_pk_boundaries[0], page_pk_boundaries[1] + 1)
         self.interesting_lines = []
         self.page_pk = None
         self.correct_labels = main_zone_pk
         self.target_zone_pk_typology_pk = None
-        self.transcriptions = None
         self.first_page_pk = page_pk_boundaries[0]
         self.last_page_pk = page_pk_boundaries[1]
         self.transcription_pk = transcription_pk
@@ -51,35 +51,40 @@ class Document:
         self.prefix = prefix
         self.document_name = document_name
         self.proportion = proportion
+        self.graphemes_classification = graphemes_classification
+        self.pixel_adjustments = pixel_adjustments
 
         self.escriptorium_url = str(os.getenv('ESCRIPTORIUM_URL'))
         username = str(os.getenv('ESCRIPTORIUM_USERNAME'))
         password = str(os.getenv('ESCRIPTORIUM_PASSWORD'))
         self.escr_connect = EscriptoriumConnector(self.escriptorium_url, username, password)
-        self.get_regions_and_transcriptions()
 
-    def get_page(self, page):
-        url = f"{self.escriptorium_url}/api/documents/{self.document_pk}/parts/?page={page}"
-        res = requests.get(url, headers=headers)
-        try:
-            data = res.json()
-        except json.decoder.JSONDecodeError as e:
-            print(res)
-        else:
-            for part in data['results']:
-                self.pages_list.append(part['pk'])
-            if data['next']:
-                self.get_page(page + 1)
+        if len(sys.argv) > 2:
+            if sys.argv[2] == "--identifiers":
+                self.get_identifiers()
 
-    def get_regions_and_transcriptions(self):
-        document_base_json = requests.get(f'{self.escriptorium_url}/api/documents/{self.document_pk}/',
-                                          headers=headers).json()
-        print(document_base_json)
+            if sys.argv[2] == "--classes":
+                self.get_classes()
 
-        self.region_types = {element['pk']: element['name'] for element in document_base_json['valid_block_types']}
-        self.transcriptions = {transcr['pk']: transcr['name'] for transcr in document_base_json["transcriptions"]}
-        print(f"Transcriptions pk: {self.transcriptions}")
-        print(f"Region types: {self.region_types}\n\n")
+    def get_classes(self):
+        classes = set()
+        for page_pk in tqdm.tqdm(self.pages_list):
+            lines_list = self.get_lines_pk_from_region(page_pk)
+            for line in lines_list:
+                chars_in_line = self.get_different_chars_in_line(page_pk, line)
+                classes.update(chars_in_line)
+        print(f"Found {len(classes)} classes: \n {list(classes)}")
+        exit(0)
+
+    def get_identifiers(self):
+        url = f'{self.escriptorium_url}/api/documents/{self.document_pk}/'
+        document_base_json = requests.get(url, headers=headers).json()
+        print(url)
+        region_types = {element['pk']: element['name'] for element in document_base_json['valid_block_types']}
+        transcriptions = {transcr['pk']: transcr['name'] for transcr in document_base_json["transcriptions"]}
+        print(f"Transcriptions pk: {transcriptions}")
+        print(f"Region types: {region_types}\n\n")
+        exit(0)
 
     def get_lines_pk_from_region(self, page):
         parts_url = f'{self.escriptorium_url}/api/documents/{self.document_pk}/parts/{page}'
@@ -113,6 +118,21 @@ class Document:
                 id_order_typology_list.append(line['pk'])
 
         return id_order_typology_list
+
+    def get_different_chars_in_line(self, part_pk, line_pk):
+        parts_url = f'{self.escriptorium_url}/api/documents/{self.document_pk}/parts/{part_pk}/lines/{line_pk}'
+        res = requests.get(parts_url, headers=headers).json()
+        different_chars = []
+        # On prend le premier, mais il faut filtrer sur le bon numéro.
+        for index, transcriptions in enumerate(res["transcriptions"]):
+            if transcriptions["transcription"] == self.transcription_pk:
+                good_index = index
+
+        transcriptions = res['transcriptions'][good_index]
+        characters = transcriptions['graphs']
+        for char in characters:
+            different_chars.append(char['c'])
+        return set(different_chars)
 
     def retrieve_chars_from_lines(self, part_pk, page_number, line_pk):
         parts_url = f'{self.escriptorium_url}/api/documents/{self.document_pk}/parts/{part_pk}/lines/{line_pk}'
@@ -175,23 +195,25 @@ class Document:
         return np.asarray(image)
 
 
-def extract_images(page, coordonnees, char, index, image_as_array, document_name):
+def extract_images(page,
+                   coordonnees,
+                   char,
+                   index,
+                   image_as_array,
+                   document_name,
+                   pixel_adjustments: dict,
+                   graphemes_classification: dict):
     """
     Extrait les images des lignes à partir des coordonnées extraites auparavant.
     :return: None
     """
     # https://stackoverflow.com/a/22650239
 
-
-
-    # Il faut ajuster ici en fonction des caracteres. Creer des classes avec correction differente ?
-    x_left_correction = - 18
-    x_right_correction = + 25
-    y_top_correction = + 10
-    y_bottom_correction = - 10
-
-
-
+    # On a des classes avec des corrections différentes en fonction du grapheme
+    x_left_correction = pixel_adjustments[graphemes_classification[char]]["x_left_correction"]
+    x_right_correction = pixel_adjustments[graphemes_classification[char]]["x_right_correction"]
+    y_top_correction = pixel_adjustments[graphemes_classification[char]]["y_top_correction"]
+    y_bottom_correction = pixel_adjustments[graphemes_classification[char]]["y_bottom_correction"]
 
     # https://stackoverflow.com/a/43591567
     # On selectionne le rectangle qui contient la ligne (= les valeurs d'abcisse et d'ordonnée
@@ -248,6 +270,20 @@ if __name__ == '__main__':
     with open(sys.argv[1], "r") as conf_file:
         conf_dict = json.load(conf_file)
 
+
+    with open("graphemes_classification.json", "r") as conf_file:
+        graphemes_classes = json.load(conf_file)
+
+    with open("pixels_adjustment.json", "r") as conf_file:
+        pixel_adjustments = json.load(conf_file)
+
+    # On modifie le dictionnaire pour le rendre plus efficace:
+    graphemes_classification = {}
+    for classe, graphemes in graphemes_classes.items():
+        for grapheme in graphemes:
+            graphemes_classification[grapheme] = classe
+
+
     document_pk = conf_dict["document_pk"]
     transcription_pk = conf_dict["transcription_pk"]
     main_zone_pk = conf_dict["target_zone_pk"]
@@ -264,7 +300,9 @@ if __name__ == '__main__':
                         main_zone_pk=main_zone_pk,
                         main_zone_label=main_zone_label,
                         prefix=file_prefix,
-                        proportion=proportion)
+                        proportion=proportion,
+                        graphemes_classification=graphemes_classification,
+                        pixel_adjustments=pixel_adjustments)
 
     for page_pk in document.pages_list:
         page_number = document.get_image(page_pk)
@@ -278,7 +316,14 @@ if __name__ == '__main__':
             if char != " ":
                 print(char)
                 with mp.Pool(processes=int(2)) as pool:
-                    data = [(page_number, coords, char, index, image_as_array, document.document_name) for index, coords
+                    data = [(page_number,
+                             coords,
+                             char,
+                             index,
+                             image_as_array,
+                             document.document_name,
+                             document.pixel_adjustments,
+                             document.graphemes_classification) for index, coords
                             in enumerate(realizations)]
                     for _ in tqdm.tqdm(pool.istarmap(extract_images, data), total=len(data)):
                         pass
