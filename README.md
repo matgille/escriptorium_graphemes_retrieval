@@ -5,7 +5,7 @@ Il utilise l'API d'eScriptorium pour récupérer les informations, les images, e
 La proportion de graphèmes conservés permet de prélever des échantillons.
 
 Il est nécessaire de disposer de modèles de transcription corrects pour récupérer des images exploitables et fiables. 
-Les graphèmes sont classées en reprenant les classes reconnue par kraken: le script reproduira donc
+Les graphèmes sont classées en reprenant les classes reconnues par le modèle: le script reproduira donc
 les biais du modèle éventuels.
 
 Un ajustement de la hauteur et de la largeur des images extraites est probablement nécessaire (à venir: 
