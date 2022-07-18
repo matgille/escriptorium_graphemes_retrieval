@@ -5,8 +5,9 @@ Il utilise l'API d'eScriptorium pour récupérer les informations, les images, e
 La proportion de graphèmes conservés permet de prélever des échantillons (option `proportion_to_keep` dans la fichier de paramètres).
 
 Il est nécessaire de disposer de modèles de transcription corrects pour récupérer des images exploitables et fiables. 
-Les graphèmes sont classées en reprenant les classes reconnues par le modèle: le script reproduira donc
-les biais éventuels du modèle et du jeu de données d'entraînement. Ce script peut servir à identifier ces biais.
+Les graphèmes sont classés en reprenant la classification du modèle: le script reproduira donc
+les biais éventuels de celui-ci modèle et donc ceux du jeu de données d'entraînement: ce script peut aussi servir à 
+identifier ces biais.
 
 Si une zone est préférée, elle sera indiquée dans le fichier configuration. Si le document
 n'est pas zoné, marquer ``null``.
