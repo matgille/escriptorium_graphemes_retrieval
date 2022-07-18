@@ -28,7 +28,7 @@ des images extraites est probablement nécessaire. Le fichier de configuration
 `bounding_box_adjustment.json` permet d'ajuster la *bounding box* en fonction d'une classification des graphèmes très simple:
 `centre`, `ascendant`, `descendant` (les graphèmes sont classés dans `graphemes_classification.json`). Pour ce faire, on lancera d'abord le script
 avec `--classes` pour récupérer les différentes classes de la transcription.
-On recommandera de tester différentes configurations avec une seule page pour débuter.
+On recommandera de tester différentes configurations avec une seule page pour trouver les réglages adaptés au document.
 
 ## Caveats
 
