@@ -12,7 +12,12 @@ Un ajustement de la hauteur et de la largeur des images extraites est probableme
 distinction des lettres en configuration par
 leur hauteur par rapport à la ligne)
 
+Si une zone est préférée, elle sera indiquée dans le fichier configuration. Si le document
+n'est pas zoné, marquer ``null``.
 
 ## Utilisation
 
 `python3 retrieve_graphemes.py fichier.conf`
+
+Il est nécessaire de lancer une première fois le script à blanc pour récupérer
+les identifiants de transcription et de zone.
