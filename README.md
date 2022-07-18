@@ -10,7 +10,7 @@ les biais éventuels de celui-ci modèle et donc ceux du jeu de données d'entra
 identifier ces biais.
 
 Si une zone est préférée, elle sera indiquée dans le fichier configuration. Si le document
-n'est pas zoné, marquer ``null``.
+ne contient pas de typologie de zones, marquer ``null``.
 
 ## Utilisation
 
