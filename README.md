@@ -30,6 +30,32 @@ des images extraites est probablement nécessaire. Le fichier de configuration
 avec `--classes` pour récupérer les différentes classes de la transcription.
 On recommandera de tester différentes configurations avec une seule page pour trouver les réglages adaptés au document.
 
+## Exemples d'images récupérées:
+
+ꝺ:
+
+![ALT](img/example/graphemes/ꝺ/46_0.png)
+![ALT](img/example/graphemes/ꝺ/46_10.png)
+![ALT](img/example/graphemes/ꝺ/46_11.png)
+![ALT](img/example/graphemes/ꝺ/46_20.png)
+![ALT](img/example/graphemes/ꝺ/46_40.png)
+
+h:
+
+![ALT](img/example/graphemes/h/46_0.png)
+![ALT](img/example/graphemes/h/46_1.png)
+![ALT](img/example/graphemes/h/46_2.png)
+![ALT](img/example/graphemes/h/46_3.png)
+![ALT](img/example/graphemes/h/46_4.png)
+
+ꝑ:
+
+![ALT](img/example/graphemes/ꝑ/46_0.png)
+![ALT](img/example/graphemes/ꝑ/46_1.png)
+![ALT](img/example/graphemes/ꝑ/46_2.png)
+![ALT](img/example/graphemes/ꝑ/46_3.png)
+![ALT](img/example/graphemes/ꝑ/46_4.png)
+
 ## Caveats
 
 Les lignes ne sont pas toujours bien liées aux zones, et cela peut entraîner une erreur
