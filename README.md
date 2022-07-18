@@ -32,6 +32,15 @@ On recommandera de tester différentes configurations avec une seule page pour t
 
 ## Exemples d'images récupérées:
 
+
+ſ:
+
+![ALT](img/example/graphemes/ſ/46_0.png)
+![ALT](img/example/graphemes/ſ/46_10.png)
+![ALT](img/example/graphemes/ſ/46_11.png)
+![ALT](img/example/graphemes/ſ/46_20.png)
+![ALT](img/example/graphemes/ſ/46_40.png)
+
 ꝺ:
 
 ![ALT](img/example/graphemes/ꝺ/46_0.png)
