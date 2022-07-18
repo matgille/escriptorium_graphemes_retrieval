@@ -20,9 +20,9 @@ Il est nécessaire de lancer une première fois le script avec l'option
 fournir une classification des graphèmes: voir paragraphe suivant.
 
 
-La *bounding box* proposée par kraken n'étant pas parfaitement ajustée, un ajustement de la hauteur et de la largeur 
+La *bounding box* calculée à partir des polygones identifiés par kraken n'étant pas parfaitement ajustée, un ajustement de la hauteur et de la largeur 
 des images extraites est probablement nécessaire. Le fichier de configuration
-`pixels_adjustment.json` permet d'ajuster la *box* en fonction d'une classification des graphèmes très simple:
+`bounding_box_adjustment.json` permet d'ajuster la *bounding box* en fonction d'une classification des graphèmes très simple:
 `centre`, `ascendant`, `descendant` (les graphèmes sont classés dans `graphemes_classification.json`). Pour ce faire, on lancera d'abord le script
 avec `--classes` pour récupérer les différentes classes de la transcription.
 On recommandera de tester différentes configurations avec une seule page pour débuter.
