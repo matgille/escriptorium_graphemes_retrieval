@@ -14,6 +14,8 @@ from dotenv import load_dotenv
 import requests
 import numpy as np
 
+
+# load_dotenv('example.env')
 load_dotenv('my.env')
 escriptorium_url = str(os.getenv('ESCRIPTORIUM_URL'))
 token = str(os.getenv('ESCRIPTORIUM_TOKEN'))
