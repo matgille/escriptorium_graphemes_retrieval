@@ -321,7 +321,7 @@ if __name__ == '__main__':
     with open("params/graphemes_classification.json", "r") as conf_file:
         graphemes_classes = json.load(conf_file)
 
-    with open("params/pixels_adjustment.json", "r") as conf_file:
+    with open("params/bounding_box_adjustment.json", "r") as conf_file:
         pixel_adjustments = json.load(conf_file)
 
     # On modifie le dictionnaire pour le rendre plus efficace:
