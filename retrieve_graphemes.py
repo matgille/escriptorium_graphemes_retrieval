@@ -15,8 +15,8 @@ import requests
 import numpy as np
 
 
-# load_dotenv('example.env')
-load_dotenv('my.env')
+# load_dotenv('params/example.env')
+load_dotenv('params/my.env')
 escriptorium_url = str(os.getenv('ESCRIPTORIUM_URL'))
 token = str(os.getenv('ESCRIPTORIUM_TOKEN'))
 headers = {'Authorization': 'Token ' + token}
@@ -318,10 +318,10 @@ if __name__ == '__main__':
         conf_dict = json.load(conf_file)
 
 
-    with open("graphemes_classification.json", "r") as conf_file:
+    with open("params/graphemes_classification.json", "r") as conf_file:
         graphemes_classes = json.load(conf_file)
 
-    with open("pixels_adjustment.json", "r") as conf_file:
+    with open("params/pixels_adjustment.json", "r") as conf_file:
         pixel_adjustments = json.load(conf_file)
 
     # On modifie le dictionnaire pour le rendre plus efficace:
