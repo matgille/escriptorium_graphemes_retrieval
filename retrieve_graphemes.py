@@ -24,7 +24,7 @@ headers = {'Authorization': 'Token ' + token}
 
 class Document:
     """
-    Hack to re-compute polygons for first and last line of each given zone.
+    Classe document autour de laquelle tourne tout le script
     """
 
     def __init__(self, document_pk,
@@ -32,11 +32,24 @@ class Document:
                  transcription_pk=None,
                  main_zone_pk=None,
                  main_zone_label=None,
-                 prefix=None,
+                 prefix="",
                  document_name=None,
                  proportion=1,
                  graphemes_classification=None,
                  pixel_adjustments=None):
+        """
+
+        :param document_pk: identifiant de document
+        :param page_pk_boundaries: identifiant de première et dernière page choisie
+        :param transcription_pk: identifiant de transcription voulue
+        :param main_zone_pk: (opt) identifiant de zone voulue
+        :param main_zone_label: (opt) label de zone voulue
+        :param prefix: (opt) préfixe du nom de chaque fichier s'il existe
+        :param document_name: nom du document pour production du dossier de sortie
+        :param proportion: proportion de graphèmes extraits
+        :param graphemes_classification: classification des graphemes selon leur position part rapport à la ligne
+        :param pixel_adjustments: paramètres d'ajustemenent par rapport aux classes précédentes
+        """
         self.document_pk = document_pk
         self.pages_list = range(page_pk_boundaries[0], page_pk_boundaries[1] + 1)
         self.interesting_lines = []
@@ -69,6 +82,11 @@ class Document:
                 self.get_classes()
 
     def get_classes(self):
+        """
+        Cette fonction imprime tous les différents caractères présent dans les pages transcrites,
+        et termine le programme
+        :return: None
+        """
         classes = set()
         for page_pk in tqdm.tqdm(self.pages_list):
             lines_list = self.get_lines_pk_from_region(page_pk)
@@ -79,6 +97,11 @@ class Document:
         exit(0)
 
     def get_identifiers(self):
+        """
+        Cette fonction imprime les différents types de zone et de transcription ainsi que leur
+        identifiant (pk)
+        :return: None
+        """
         url = f'{self.escriptorium_url}/api/documents/{self.document_pk}/'
         document_base_json = requests.get(url, headers=headers).json()
         print(url)
@@ -88,12 +111,19 @@ class Document:
         print(f"Region types: {region_types}\n\n")
         exit(0)
 
-    def get_lines_pk_from_region(self, page):
-        parts_url = f'{self.escriptorium_url}/api/documents/{self.document_pk}/parts/{page}'
+    def get_lines_pk_from_region(self, page_pk:int) -> list:
+        """
+        Cette fonction retourne la liste de toutes les lignes d'une page donnée,
+        en filtrant éventuellement par zone d'intérêt
+        :param page:
+        :return: La liste d'identifiants de ligne
+        """
+        parts_url = f'{self.escriptorium_url}/api/documents/{self.document_pk}/parts/{page_pk}'
         res = requests.get(parts_url, headers=headers).json()
         regions = res["regions"]
         dictionnary = {}
         simplified_regions = []
+        list_of_lines_pk = []
         if main_zone_pk:
             for region in regions:
                 identifier = region['pk']
@@ -109,17 +139,15 @@ class Document:
                 if self.region_types[typology] == self.target_zone_pk:
                     self.target_zone_pk_typology_pk = typology
                     simplified_regions.append(identifier)
-            id_order_typology_list = []
 
             for line in res['lines']:
                 if dictionnary[line['region']] == self.target_zone_label:
-                    id_order_typology_list.append(line['pk'])
+                    list_of_lines_pk.append(line['pk'])
         else:
-            id_order_typology_list = []
             for line in res['lines']:
-                id_order_typology_list.append(line['pk'])
+                list_of_lines_pk.append(line['pk'])
 
-        return id_order_typology_list
+        return list_of_lines_pk
 
     def get_different_chars_in_line(self, part_pk, line_pk):
         parts_url = f'{self.escriptorium_url}/api/documents/{self.document_pk}/parts/{part_pk}/lines/{line_pk}'
@@ -136,16 +164,26 @@ class Document:
             different_chars.append(char['c'])
         return set(different_chars)
 
-    def retrieve_chars_from_lines(self, part_pk, page_number, line_pk):
+    def retrieve_chars_from_lines(self, part_pk, page_name, line_pk):
+        """
+        Cette fonction récupère les coordonnées de chaque réalisation d'un graphème et les ajoute à un dictionnaire
+        de la forme:
+        {"nom_de_la_page": {"grapheme": [coordonnées_realisation_1, coordonnées_realisation_2, ..., coordonnées_realisation_n]}}.
+        Une fonction aléatoire vient permettre de ne conserver qu'une proportion donnée des réalisations si besoin.
+        :param part_pk: l'identifiant de la page
+        :param page_name: le nom réduit de la page
+        :param line_pk: l'identifiant de la ligne
+        :return: None
+        """
         parts_url = f'{self.escriptorium_url}/api/documents/{self.document_pk}/parts/{part_pk}/lines/{line_pk}'
         res = requests.get(parts_url, headers=headers).json()
 
-        # On prend le premier, mais il faut filtrer sur le bon numéro.
+        # Il faut filtrer et récupérer la bonne transcription.
         for index, transcriptions in enumerate(res["transcriptions"]):
             if transcriptions["transcription"] == self.transcription_pk:
-                good_index = index
+                correct_transcription_index = index
 
-        transcriptions = res['transcriptions'][good_index]
+        transcriptions = res['transcriptions'][correct_transcription_index]
         characters = transcriptions['graphs']
         for char in characters:
             random_integer = random.randint(0, 100)
@@ -156,14 +194,14 @@ class Document:
                 continue
             # Déjà on s'assure que la clé existe
             try:
-                self.chars_coords_dict[page_number]
+                self.chars_coords_dict[page_name]
             except:
-                self.chars_coords_dict[page_number] = {}
+                self.chars_coords_dict[page_name] = {}
 
             try:
-                self.chars_coords_dict[page_number][char['c']].append(char['poly'])
+                self.chars_coords_dict[page_name][char['c']].append(char['poly'])
             except Exception as e:
-                self.chars_coords_dict[page_number][char['c']] = [char['poly']]
+                self.chars_coords_dict[page_name][char['c']] = [char['poly']]
 
     def get_transcriptions_pk(self, part):
         parts_url = f'{self.escriptorium_url}/api/documents/{self.document_pk}/parts/{part}/transcriptions/'
@@ -173,8 +211,14 @@ class Document:
         with open("trash/test.json", "w") as json_output_file:
             json.dump(res, json_output_file)
 
-    def get_image(self, page):
-        url = f'{self.escriptorium_url}/api/documents/{self.document_pk}/parts/{page}'
+    def get_image(self, page_pk):
+        """
+        Cette fonction télécharge l'image et renvoie le nom de l'image sans préfixe (s'il existe) ni extension:
+        pg_0001.png > renvoie 0001
+        :param page_pk: l'identifiant de la page
+        :return:
+        """
+        url = f'{self.escriptorium_url}/api/documents/{self.document_pk}/parts/{page_pk}'
         page_as_json = requests.get(url, headers=headers).json()
         uri = page_as_json['image']['uri']
         res = requests.get(f"{self.escriptorium_url}/{uri}", headers=headers)
@@ -191,8 +235,13 @@ class Document:
             print('no success for: ' + img_name)
         return img_name.replace(self.image_extension, "").replace(self.prefix, "")
 
-    def open_image(self, page):
-        image_path = f"img/{self.document_name}/{self.prefix}{page}{self.image_extension}"
+    def open_image(self, page_name):
+        """
+        Ouvre une image et la convertit en matrice numpy.
+        :param page_name: le nom de la page
+        :return: la matrice numpy
+        """
+        image_path = f"img/{self.document_name}/{self.prefix}{page_name}{self.image_extension}"
         image = Image.open(image_path).convert("RGBA")
         return np.asarray(image)
 
@@ -206,7 +255,11 @@ def extract_images(page,
                    pixel_adjustments: dict,
                    graphemes_classification: dict):
     """
-    Extrait les images des lignes à partir des coordonnées extraites auparavant.
+    Extrait les images des graphemes à partir des coordonnées extraites auparavant,
+    et les enregistre dans un dossier au nom du grapheme, de la forme:
+    NomDeLaPage_NombreDeRealisationPrecedentes.extension
+
+
     :return: None
     """
     # https://stackoverflow.com/a/22650239
@@ -307,25 +360,25 @@ if __name__ == '__main__':
                         pixel_adjustments=pixel_adjustments)
 
     for page_pk in document.pages_list:
-        page_number = document.get_image(page_pk)
+        page_name = document.get_image(page_pk)
         lines_list = document.get_lines_pk_from_region(page_pk)
-        print(page_number)
+        print(page_name)
         for line in lines_list:
-            document.retrieve_chars_from_lines(page_pk, page_number, line)
-        image_as_array = document.open_image(page_number)
+            document.retrieve_chars_from_lines(page_pk, page_name, line)
+        image_as_array = document.open_image(page_name)
 
-        for char, realizations in document.chars_coords_dict[page_number].items():
-            if char != " ":
-                print(char)
-                with mp.Pool(processes=int(2)) as pool:
-                    data = [(page_number,
-                             coords,
-                             char,
-                             index,
-                             image_as_array,
-                             document.document_name,
-                             document.pixel_adjustments,
-                             document.graphemes_classification) for index, coords
-                            in enumerate(realizations)]
-                    for _ in tqdm.tqdm(pool.istarmap(extract_images, data), total=len(data)):
-                        pass
+        for char, realizations in document.chars_coords_dict[page_name].items():
+            print(f"|{char}|")
+            # On passe par du multiprocessing pour accélérer un peu les choses.
+            with mp.Pool(processes=int(2)) as pool:
+                data = [(page_name,
+                         coords,
+                         char,
+                         index,
+                         image_as_array,
+                         document.document_name,
+                         document.pixel_adjustments,
+                         document.graphemes_classification) for index, coords
+                        in enumerate(realizations)]
+                for _ in tqdm.tqdm(pool.istarmap(extract_images, data), total=len(data)):
+                    pass
