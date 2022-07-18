@@ -25,3 +25,8 @@ des images extraites est probablement nécessaire. Le fichier de configuration
 `centre`, `ascendant`, `descendant` (les graphèmes sont classés dans `graphemes_classification.json`). Pour ce faire, on lancera d'abord le script
 avec `--classes` pour récupérer les différentes classes de la transcription.
 On recommandera de tester différentes configurations avec une seule page pour débuter.
+
+## Caveats
+
+Les lignes ne sont pas toujours bien liées aux zones, et cela peut entraîner une erreur
+que le script ne sait gérer en l'état: dans ce cas, il faut faire l'impasse sur les zones.
