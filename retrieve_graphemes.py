@@ -27,7 +27,8 @@ class Document:
     Classe document autour de laquelle tourne tout le script
     """
 
-    def __init__(self, document_pk,
+    def __init__(self,
+                 document_pk,
                  page_pk_boundaries: tuple,
                  transcription_pk=None,
                  main_zone_pk=None,
@@ -214,7 +215,9 @@ class Document:
     def get_image(self, page_pk):
         """
         Cette fonction télécharge l'image et renvoie le nom de l'image sans préfixe (s'il existe) ni extension:
-        pg_0001.png > renvoie 0001
+        pg_0001.png > renvoie 0001.
+        Fonction adaptée du vademecum sur l'API produit par Daniel Stökl et Robin Tissot:
+        https://docs.google.com/document/d/1tl48eXHq36KJ1zyXq0dMwYEzdnQYUm_MKfzMat9vjPc/edit#
         :param page_pk: l'identifiant de la page
         :return:
         """
