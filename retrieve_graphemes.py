@@ -1,6 +1,7 @@
 import io
 import json
 import random
+import shutil
 import sys
 import multiprocessing as mp
 import tqdm
@@ -13,7 +14,6 @@ import os
 from dotenv import load_dotenv
 import requests
 import numpy as np
-
 
 # load_dotenv('params/example.env')
 load_dotenv('params/my.env')
@@ -69,6 +69,8 @@ class Document:
         self.proportion = proportion
         self.graphemes_classification = graphemes_classification
         self.pixel_adjustments = pixel_adjustments
+        self.image_as_array = None
+        self.page_name = None
 
         self.escriptorium_url = str(os.getenv('ESCRIPTORIUM_URL'))
         username = str(os.getenv('ESCRIPTORIUM_USERNAME'))
@@ -92,8 +94,12 @@ class Document:
         for page_pk in tqdm.tqdm(self.pages_list):
             lines_list = self.get_lines_pk_from_region(page_pk)
             for line in lines_list:
-                chars_in_line = self.get_different_chars_in_line(page_pk, line)
-                classes.update(chars_in_line)
+                classes.update(self.get_different_chars_in_line(page_pk, line))
+
+        classified_graphemes = set(list(self.graphemes_classification.keys()))
+        difference = list(classes - classified_graphemes)
+        assert len(difference) == 0, f"Please add {difference} to graphemes classification file."
+
         print(f"Found {len(classes)} classes: \n {list(classes)}")
         exit(0)
 
@@ -112,7 +118,7 @@ class Document:
         print(f"Region types: {region_types}\n\n")
         exit(0)
 
-    def get_lines_pk_from_region(self, page_pk:int) -> list:
+    def get_lines_pk_from_region(self, page_pk: int) -> list:
         """
         Cette fonction retourne la liste de toutes les lignes d'une page donnée,
         en filtrant éventuellement par zone d'intérêt
@@ -161,11 +167,50 @@ class Document:
 
         transcriptions = res['transcriptions'][good_index]
         characters = transcriptions['graphs']
-        for char in characters:
-            different_chars.append(char['c'])
-        return set(different_chars)
 
-    def retrieve_chars_from_lines(self, part_pk, page_name, line_pk):
+        return set([char['c'] for char in characters])
+
+
+    def get_chars_from_lines(self, part_pk, line_pk):
+        parts_url = f'{self.escriptorium_url}/api/documents/{self.document_pk}/parts/{part_pk}/lines/{line_pk}'
+        res = requests.get(parts_url, headers=headers).json()
+
+        # Il faut filtrer et récupérer la bonne transcription.
+        for index, transcriptions in enumerate(res["transcriptions"]):
+            if transcriptions["transcription"] == self.transcription_pk:
+                correct_transcription_index = index
+
+        try:
+            transcriptions = res['transcriptions'][correct_transcription_index]
+            characters = transcriptions['graphs']
+            for char in characters:
+                try:
+                    os.makedirs(f"img/{self.document_name}/graphemes/{char['c']}")
+                except:
+                    pass
+                random_integer = random.randint(0, 100)
+                prop = int((1 - self.proportion) * 100)
+                if random_integer > prop:
+                    pass
+                else:
+                    continue
+                # Déjà on s'assure que la clé existe
+                try:
+                    self.chars_coords_dict[self.page_name]
+                except:
+                    self.chars_coords_dict[self.page_name] = {}
+
+                try:
+                    self.chars_coords_dict[self.page_name][line_pk].append((char['c'], char['poly']))
+                except Exception as e:
+                    self.chars_coords_dict[self.page_name][line_pk] = [(char['c'], char['poly'])]
+        except:
+            pass
+
+
+
+
+    def retrieve_chars_from_lines(self, part_pk, line_pk):
         """
         Cette fonction récupère les coordonnées de chaque réalisation d'un graphème et les ajoute à un dictionnaire
         de la forme:
@@ -195,14 +240,14 @@ class Document:
                 continue
             # Déjà on s'assure que la clé existe
             try:
-                self.chars_coords_dict[page_name]
+                self.chars_coords_dict[self.page_name]
             except:
-                self.chars_coords_dict[page_name] = {}
+                self.chars_coords_dict[self.page_name] = {}
 
             try:
-                self.chars_coords_dict[page_name][char['c']].append(char['poly'])
+                self.chars_coords_dict[self.page_name][char['c']].append(char['poly'])
             except Exception as e:
-                self.chars_coords_dict[page_name][char['c']] = [char['poly']]
+                self.chars_coords_dict[self.page_name][char['c']] = [char['poly']]
 
     def get_transcriptions_pk(self, part):
         parts_url = f'{self.escriptorium_url}/api/documents/{self.document_pk}/parts/{part}/transcriptions/'
@@ -212,7 +257,7 @@ class Document:
         with open("trash/test.json", "w") as json_output_file:
             json.dump(res, json_output_file)
 
-    def get_image(self, page_pk):
+    def get_image_name(self, page_pk):
         """
         Cette fonction télécharge l'image et renvoie le nom de l'image sans préfixe (s'il existe) ni extension:
         pg_0001.png > renvoie 0001.
@@ -236,23 +281,24 @@ class Document:
             image.save(f"img/{self.document_name}/{img_name}")
         except:
             print('no success for: ' + img_name)
-        return img_name.replace(self.image_extension, "").replace(self.prefix, "")
+        self.page_name = img_name.replace(self.image_extension, "").replace(self.prefix, "")
 
-    def open_image(self, page_name):
+    def open_image(self):
         """
         Ouvre une image et la convertit en matrice numpy.
         :param page_name: le nom de la page
         :return: la matrice numpy
         """
-        image_path = f"img/{self.document_name}/{self.prefix}{page_name}{self.image_extension}"
+        image_path = f"img/{self.document_name}/{self.prefix}{self.page_name}{self.image_extension}"
         image = Image.open(image_path).convert("RGBA")
-        return np.asarray(image)
+        self.image_as_array = np.asarray(image)
 
 
 def extract_images(page,
-                   coordonnees,
-                   char,
-                   index,
+                   line_pk,
+                   chars,
+                   chars_to_exclude,
+                   only_chars,
                    image_as_array,
                    document_name,
                    pixel_adjustments: dict,
@@ -268,68 +314,78 @@ def extract_images(page,
     # https://stackoverflow.com/a/22650239
 
     # On a des classes avec des corrections différentes en fonction du grapheme
-    x_left_correction = pixel_adjustments[graphemes_classification[char]]["x_left_correction"]
-    x_right_correction = pixel_adjustments[graphemes_classification[char]]["x_right_correction"]
-    y_top_correction = pixel_adjustments[graphemes_classification[char]]["y_top_correction"]
-    y_bottom_correction = pixel_adjustments[graphemes_classification[char]]["y_bottom_correction"]
-
-    # https://stackoverflow.com/a/43591567
-    # On selectionne le rectangle qui contient la ligne (= les valeurs d'abcisse et d'ordonnée
-    # maximales et minimales)
-    y_max = max([i[1] for i in coordonnees]) + y_bottom_correction
-    y_min = min([i[1] for i in coordonnees]) + y_top_correction
-    x_max = max([i[0] for i in coordonnees]) + x_right_correction
-    x_min = min([i[0] for i in coordonnees]) + x_left_correction
-    rectangle_coordinates = (x_min, y_min, x_max, y_max)
-    polygone = ((x_min, y_min), (x_max, y_min), (x_max, y_max), (x_min, y_max))
-    maskIm = Image.new('L', (image_as_array.shape[1], image_as_array.shape[0]), 0)  # c'est ici qu'on initialise
-    # une plus petite image.
-    ImageDraw.Draw(maskIm).polygon(polygone, outline=1, fill=1)
-    mask = np.array(maskIm)
-
-    # assemble new image (uint8: 0-255)
-    newImArray = np.empty(image_as_array.shape, dtype='uint8')
-
-    # colors (three first columns, RGB)
-    newImArray[:, :, :3] = image_as_array[:, :, :3]
-
-    # transparency (4th column)
-    newImArray[:, :, 3] = mask * 255
-
-    # On enregistre
-    newIm = Image.fromarray(newImArray, "RGBA")
-    try:
-        cropped_img = newIm.crop(rectangle_coordinates)
-    except:
-        return
-
-    try:
-        os.makedirs(f"img/{document_name}/graphemes/{char}")
-    except:
+    if only_chars is None:
         pass
-    try:
-        cropped_img.save(f"img/{document_name}/graphemes/{char}/{page}_{index}.png")
-    except:
-        pass
+    else:
+        chars = [(char, coords) for (char, coords) in chars if char in only_chars]
+    for index, (char, coords) in enumerate(chars):
+        if os.path.exists(f"img/{document_name}/graphemes/{char}/{page}_{line_pk}_{index}.png"):
+            continue
+        else:
+            if char in chars_to_exclude:
+                continue
+            try:
+                x_left_correction = pixel_adjustments[graphemes_classification[char]]["x_left_correction"]
+            except KeyError:
+                print(f"Char '{char}' not included in classification file, please do so.")
+            x_right_correction = pixel_adjustments[graphemes_classification[char]]["x_right_correction"]
+            y_top_correction = pixel_adjustments[graphemes_classification[char]]["y_top_correction"]
+            y_bottom_correction = pixel_adjustments[graphemes_classification[char]]["y_bottom_correction"]
+
+            # https://stackoverflow.com/a/43591567
+            # On selectionne le rectangle qui contient la ligne (= les valeurs d'abcisse et d'ordonnée
+            # maximales et minimales)
+            y_max = max([i[1] for i in coords]) + y_bottom_correction
+            y_min = min([i[1] for i in coords]) + y_top_correction
+            x_max = max([i[0] for i in coords]) + x_right_correction
+            x_min = min([i[0] for i in coords]) + x_left_correction
+
+            rectangle_coordinates = (x_min, y_min, x_max, y_max)
+            polygone = ((x_min, y_min), (x_max, y_min), (x_max, y_max), (x_min, y_max))
+            maskIm = Image.new('L', (image_as_array.shape[1], image_as_array.shape[0]), 0)  # c'est ici qu'on initialise
+            # une plus petite image.
+            ImageDraw.Draw(maskIm).polygon(polygone, outline=1, fill=1)
+            mask = np.array(maskIm)
+
+            # assemble new image (uint8: 0-255)
+            newImArray = np.empty(image_as_array.shape, dtype='uint8')
+
+            # colors (three first columns, RGB)
+            newImArray[:, :, :3] = image_as_array[:, :, :3]
+
+            # transparency (4th column)
+            newImArray[:, :, 3] = mask * 255
+
+            # On enregistre
+            newIm = Image.fromarray(newImArray, "RGBA")
+            try:
+                cropped_img = newIm.crop(rectangle_coordinates)
+            except:
+                return
+
+            try:
+                cropped_img.save(f"img/{document_name}/graphemes/{char}/{page}_{line_pk}_{index}.png")
+            except:
+                pass
 
 
 if __name__ == '__main__':
     with open(sys.argv[1], "r") as conf_file:
         conf_dict = json.load(conf_file)
 
-
     with open("params/graphemes_classification.json", "r") as conf_file:
         graphemes_classes = json.load(conf_file)
 
-    with open("params/bounding_box_adjustment.json", "r") as conf_file:
-        pixel_adjustments = json.load(conf_file)
+    if len(sys.argv) == 3:
+        only_chars = sys.argv[2].split(',')
+    else:
+        only_chars = None
 
     # On modifie le dictionnaire pour le rendre plus efficace:
     graphemes_classification = {}
     for classe, graphemes in graphemes_classes.items():
         for grapheme in graphemes:
             graphemes_classification[grapheme] = classe
-
 
     document_pk = conf_dict["document_pk"]
     transcription_pk = conf_dict["transcription_pk"]
@@ -339,6 +395,8 @@ if __name__ == '__main__':
     document_name = conf_dict["docName"]
     parts = conf_dict["parts"]
     proportion = conf_dict["proportion_to_keep"]
+    chars_to_exclude = conf_dict["chars_to_exclude"]
+    pixel_adjustments = conf_dict["ajustement"]
 
     document = Document(document_pk=document_pk,
                         document_name=document_name,
@@ -351,26 +409,27 @@ if __name__ == '__main__':
                         graphemes_classification=graphemes_classification,
                         pixel_adjustments=pixel_adjustments)
 
-    for page_pk in document.pages_list:
-        page_name = document.get_image(page_pk)
-        lines_list = document.get_lines_pk_from_region(page_pk)
-        print(page_name)
-        for line in lines_list:
-            document.retrieve_chars_from_lines(page_pk, page_name, line)
-        image_as_array = document.open_image(page_name)
 
-        for char, realizations in document.chars_coords_dict[page_name].items():
-            print(f"|{char}|")
-            # On passe par du multiprocessing pour accélérer un peu les choses.
-            with mp.Pool(processes=int(2)) as pool:
-                data = [(page_name,
-                         coords,
-                         char,
-                         index,
-                         image_as_array,
-                         document.document_name,
-                         document.pixel_adjustments,
-                         document.graphemes_classification) for index, coords
-                        in enumerate(realizations)]
-                for _ in tqdm.tqdm(pool.istarmap(extract_images, data), total=len(data)):
-                    pass
+    for page_pk in document.pages_list:
+        document.get_image_name(page_pk)
+        print(document.page_name)
+        lines_list = document.get_lines_pk_from_region(page_pk)
+        for line in lines_list:
+            document.get_chars_from_lines(page_pk, line)
+            # document.retrieve_chars_from_lines(page_pk, line)
+        document.open_image()
+
+        # On passe par du multiprocessing pour accélérer un peu les choses.
+        with mp.Pool(processes=int(1)) as pool:
+            data = [(document.page_name,
+                     line_pk,
+                     line,
+                     chars_to_exclude,
+                     only_chars,
+                     document.image_as_array,
+                     document.document_name,
+                     document.pixel_adjustments,
+                     document.graphemes_classification) for line_pk, line in
+                    document.chars_coords_dict[document.page_name].items()]
+            for _ in tqdm.tqdm(pool.istarmap(extract_images, data), total=len(data)):
+                pass
