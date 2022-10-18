@@ -1,15 +1,21 @@
 {
   "centre": {
-	"x_left_correction": -18,
-	"x_right_correction": 25,
-	"y_top_correction": 10,
+	"x_left_correction": -15,
+	"x_right_correction": 22,
+	"y_top_correction": 15,
 	"y_bottom_correction": -10
+  },
+  "grand_format": {
+	"x_left_correction": -20,
+	"x_right_correction": 30,
+	"y_top_correction": -10,
+	"y_bottom_correction": 20
   },
   "descendant": {
 	"x_left_correction": -18,
 	"x_right_correction": 25,
 	"y_top_correction": 10,
-	"y_bottom_correction": 10
+	"y_bottom_correction": 15
   },
   "ascendant": {
 	"x_left_correction": -18,

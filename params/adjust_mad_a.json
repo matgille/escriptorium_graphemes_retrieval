@@ -1,0 +1,26 @@
+{
+  "centre": {
+	"x_left_correction": -20,
+	"x_right_correction": 30,
+	"y_top_correction": 10,
+	"y_bottom_correction": 10
+  },
+  "grand_format": {
+	"x_left_correction": -30,
+	"x_right_correction": 35,
+	"y_top_correction": -10,
+	"y_bottom_correction": 20
+  },
+  "descendant": {
+	"x_left_correction": -20,
+	"x_right_correction": 30,
+	"y_top_correction": 10,
+	"y_bottom_correction": 20
+  },
+  "ascendant": {
+	"x_left_correction": -20,
+	"x_right_correction": 30,
+	"y_top_correction": -10,
+	"y_bottom_correction": 0
+  }
+}
